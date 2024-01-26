@@ -1,3 +1,3 @@
 This is a test to hopefully get Jira working
 
-Modification from my PC
+This is a webserver that hosts the system that the app will post orders to and the queues will read from
