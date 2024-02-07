@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  postgresql:
+    image: postgres
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  
+  adminer:
+    image: adminer
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "${ADMINER_PORT}:8080"
+  
+  webserver:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: lwo_webserver
+    ports:
+      - "${WEBSERVER_PORT}:8000"
