@@ -1,31 +1,22 @@
 version: "3.8"
 
 services:
-  postgresql:
-    image: postgres
-    container_name: postgres_db
+  lwo_db:
+    image: mongo
+    container_name: mongo_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: "db"
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "27017:27017"
     volumes:
-      - ./postgres/data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-  
-  adminer:
-    image: adminer
-    container_name: pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "${ADMINER_PORT}:8080"
+      - ./dbdata:/data/db
+      - ./init.js:/docker-entrypoint-initdb.d/init.js
   
   webserver:
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
     container_name: lwo_webserver
     ports:

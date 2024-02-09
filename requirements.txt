@@ -1,4 +1,4 @@
-psycopg[binary]
+fastapi
+motor
+pydantic
 python-dotenv
-fastapi[all]
-sqlmodel
