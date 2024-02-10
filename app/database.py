@@ -1,12 +1,43 @@
 from dotenv import dotenv_values
-from sqlmodel import create_engine, Session
+from motor.motor_asyncio import AsyncIOMotorClient
 
-CONFIG = dotenv_values(".env")
-DATABASE_URL = f"postgresql://{CONFIG.get('POSTGRES_USER','postgres')}:{CONFIG.get('POSTGRES_PASSWORD','postgres')}@{CONFIG.get('POSTGRES_HOST','postgres_db')}:{CONFIG.get('POSTGRES_PORT','5432')}/{CONFIG.get('POSTGRES_DB','food_db')}"
-del CONFIG
+from urllib.parse import quote_plus
 
-engine = create_engine(DATABASE_URL, echo=True)
-# Dependency
+# See https://motor.readthedocs.io/en/stable/api-asyncio/asyncio_motor_client.html
+
+# Note: Clients and sessions are NOT the same thing. Do NOT create a new client for every transaction/operation
+
+client = None
+
+def start_client():
+    CONFIG = dotenv_values("/code/app/.env")    
+    global client
+    if not client:
+        auth = f"{quote_plus(CONFIG['MONGODB_USERNAME'])}:{quote_plus(CONFIG['MONGODB_PASSWORD'])}@" if ('MONGODB_USERNAME' in CONFIG and 'MONGODB_PASSWORD' in CONFIG) else ""
+        DATABASE_URL = f"mongodb://{auth}lwo_db:{CONFIG.get('MONGODB_PORT','27017')}/{CONFIG.get('MONGODB_DB','db')}?authSource=admin"
+        client = AsyncIOMotorClient(DATABASE_URL)
+    else:
+        raise RuntimeError("Client already exists")
+
+def end_client():
+    global client
+    if client:
+        client.close()
+        client = None
+
 def get_session():
-    with Session(engine) as session:
-        yield session
+    global client
+    # Note: the session doesn't really start until this object is awaited
+    # Thus this should be used like:
+    #
+    # async with await get_session() as s:
+    #     await get_collection(COLLECTION_NAME).operation(ARGS, session=s)
+    #     ...
+    # (No end_session() needed because of the with clause)
+    #
+    # From the docs: Do not use the same session for multiple operations concurrently.
+    return client.start_session()
+
+def get_collection(collection_name):
+    global client
+    return client.get_default_database()[collection_name]

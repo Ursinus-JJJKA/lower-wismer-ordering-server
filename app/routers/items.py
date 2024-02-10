@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
+from fastapi import APIRouter, HTTPException
 
-from ..database import get_session
-from .. import crud, schemas
+from ..database import get_collection
+from ..schemas import *
+#from .. import crud, schemas
 
 router = APIRouter(
     prefix="/items",
@@ -10,7 +10,42 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/", response_model=list[schemas.Item])
-def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_session)):
-    items = crud.get_items(db, skip=skip, limit=limit)
-    return items
+@router.post("/", response_model=ItemResponse)
+async def post_item_handler(item: ItemCreateRequest):
+    result = await get_collection("items").insert_one(item.dict())
+    return ItemResponse(**item.model_dump(),_id=result.inserted_id)
+
+@router.get("/", response_model=list[ItemResponse])
+async def get_items_handler():
+    result = await get_collection("items").find({}).to_list(length=None)
+    return result
+
+@router.get("/{item_id}", response_model=ItemResponse)
+async def get_item_handler(item_id: PyObjectId):
+    item = await get_collection("items").find_one({"_id": item_id})
+    if item:
+        return item
+    raise HTTPException(status_code=404, detail=f"Item not found")
+
+async def general_update_item_handler(item_id: PyObjectId, item: ItemCreateRequest, exclude_unset):
+    updated_item = await get_collection("items").find_one_and_update(
+        {"_id": item_id}, {"$set": item.model_dump(exclude_unset=exclude_unset)}
+    )
+    if updated_item:
+        return await get_item_handler(item_id)
+    raise HTTPException(status_code=404, detail="Item not found")
+
+@router.put("/{item_id}", response_model=ItemResponse)
+async def put_item_handler(item_id: PyObjectId, item: ItemCreateRequest):
+    return await general_update_item_handler(item_id, item, exclude_unset=False)
+
+@router.patch("/{item_id}", response_model=ItemResponse)
+async def patch_item_handler(item_id: PyObjectId, item: ItemUpdateRequest):
+    return await general_update_item_handler(item_id, item, exclude_unset=True)
+
+@router.delete("/{item_id}", response_model=ItemResponse)
+async def delete_item(item_id: PyObjectId):
+    deleted_item = await get_collection("items").find_one_and_delete({"_id": item_id})
+    if deleted_item:
+        return deleted_item
+    raise HTTPException(status_code=404, detail="Item not found")

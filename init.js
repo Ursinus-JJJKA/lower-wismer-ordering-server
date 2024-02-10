@@ -1,10 +1,9 @@
-const options_schema = {
+const optionsSchema = {
     bsonType: "object",
     required: ["type", "choices"],
     additionalProperties: false,
     properties: {
         type: {
-            bsonType: "string",
             enum: ["radio", "checkbox"]
         },
         choices: {
@@ -17,7 +16,7 @@ const options_schema = {
     }
 };
 
-const menuitem_schema = {
+const menuItemSchema = {
     bsonType: "object",
     required: ["name", "price", "options"],
     additionalProperties: false,
@@ -30,16 +29,19 @@ const menuitem_schema = {
         },
         options: {
             bsonType: "array",
-            items: options_schema
+            items: optionsSchema
         }
     }
 };
 
-const orderitem_schema = {
+const orderItemSchema = {
     bsonType: "object",
-    required: ["name", "price", "choices"],
+    required: ["kitchenName", "name", "price", "choices"],
     additionalProperties: false,
     properties: {
+        kitchenName: {
+            bsonType: "string"
+        },
         name: {
             bsonType: "string",
         },
@@ -60,25 +62,23 @@ db.createCollection("Menus", {
         $jsonSchema: {
             bsonType: "object",
             title: "Menu Object Validation",
-            required: ["_id", "name", "menuitems"],
+            required: ["_id", "kitchenName", "menuItems"],
             additionalProperties: false,
             properties: {
                 _id: {
                     bsonType: "objectId"
                 },
-                name: {
-                    bsonType: "string",
-                    description: "'name' must be a string and is required"
+                kitchenName: {
+                    bsonType: "string"
                 },
-                menuitems: {
+                menuItems: {
                     bsonType: "array",
-                    description: "'menuitems' must be an array and is required",
-                    items: menuitem_schema
+                    items: menuItemSchema
                 }
             }
         }
     }
-})
+});
 
 db.createCollection("Users", {
     validator: {
@@ -94,24 +94,22 @@ db.createCollection("Users", {
                             bsonType: "objectId"
                         },
                         username: {
-                            bsonType: "string",
-                            description: "'username' must be a string and is required"
+                            bsonType: "string"
                         },
                         balance: {
-                            bsonType: "double",
-                            description: "'balance' must be a double and is required"
+                            bsonType: "double"
                         }
                     }
                 }
             },
             {
                 $expr: {
-                    $gte: ["balance", 0]
+                    $gte: ["$balance", 0]
                 }
             }
         ]
     }
-})
+});
 
 db.Users.createIndex(
     {
@@ -120,40 +118,42 @@ db.Users.createIndex(
     {
         unique: true
     }
-)
+);
 
 db.createCollection("Orders", {
     validator: {
         $jsonSchema: {
             bsonType: "object",
             title: "Order Object Validation",
-            required: ["_id", "userid", "date", "orderitems"],
+            required: ["_id", "userId", "dateOrdered", "orderItems", "status"],
             additionalProperties: false,
             properties: {
                 _id: {
                     bsonType: "objectId"
                 },
-                userid: {
+                userId: {
                     bsonType: "objectId"
                 },
-                date: {
-                    bsonType: "date",
-                    description: "'date' must be a date and is required"
+                dateOrdered: {
+                    bsonType: ["string", "date"]
                 },
-                orderitems: {
+                orderItems: {
                     bsonType: "array",
-                    description: "'orderitems' must be an array and is required",
-                    items: orderitem_schema
+                    items: orderItemSchema
+                },
+                status: {
+                    enum: ["ordered", "ready", "fulfilled"]
                 }
             }
         }
     }
-})
+});
 
+console.log("Inserting menu document");
 db.Menus.insertOne(
     {
-        name: "Example Section",
-        menuitems: [
+        kitchenName: "Example Kitchen",
+        menuItems: [
             {
                 name: "Example Food",
                 price: 9.99,
@@ -161,25 +161,29 @@ db.Menus.insertOne(
             }
         ]
     }
-)
+);
 
+console.log("Inserting user document");
 var userInsertRes = db.Users.insertOne(
     {
         username: "Example Username",
         balance: 123.45
     }
-)
+);
 
+console.log("Inserting order document");
 db.Orders.insertOne(
     {
-        userid: userInsertRes.insertedId,
-        date: new Date(),
-        orderitems: [
+        userId: userInsertRes.insertedId,
+        dateOrdered: new Date(),
+        orderItems: [
             {
+                kitchenName: "Example Kitchen",
                 name: "Example Food",
                 price: 9.99,
-                options: []
+                choices: []
             }
-        ]
+        ],
+        status: "ordered"
     }
-)
+);
