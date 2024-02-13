@@ -62,11 +62,14 @@ db.createCollection("Menus", {
         $jsonSchema: {
             bsonType: "object",
             title: "Menu Object Validation",
-            required: ["_id", "kitchenName", "menuItems"],
+            required: ["_id", "menuName", "kitchenName", "menuItems"],
             additionalProperties: false,
             properties: {
                 _id: {
                     bsonType: "objectId"
+                },
+                menuName: {
+                    bsonType: "string"
                 },
                 kitchenName: {
                     bsonType: "string"
@@ -152,6 +155,7 @@ db.createCollection("Orders", {
 console.log("Inserting menu document");
 db.Menus.insertOne(
     {
+        menuName: "Example Section",
         kitchenName: "Example Kitchen",
         menuItems: [
             {

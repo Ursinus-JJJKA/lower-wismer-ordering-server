@@ -1,23 +1,26 @@
 from fastapi import FastAPI
 
-#from . import crud, models, schemas
+from contextlib import asynccontextmanager
+
 from .database import start_client, end_client
-#from .dependencies import get_query_token, get_token_header
-from .routers import items#, menus, orders, users
+from .routers import items, menus, orders, users
 
-app = FastAPI()
 
-@app.on_event("startup")
-def startup_db_client():
-    print("Starting client hook")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up database client")
     start_client()
-
-@app.on_event("shutdown")
-def shutdown_db_client():
-    print("Shutdown client hook")
+    yield
+    print("Shutting down database client")
     end_client()
 
+
+app = FastAPI(lifespan=lifespan)
+
 app.include_router(items.router)
+app.include_router(menus.router)
+app.include_router(orders.router)
+app.include_router(users.router)
 
 @app.get("/", tags=["Root"])
 async def read_root():

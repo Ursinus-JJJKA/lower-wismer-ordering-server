@@ -1,24 +1,23 @@
 from fastapi import APIRouter, HTTPException
 
 from ..database import get_collection
-from ..schemas import *
-#from .. import crud, schemas
+from ..schemas import ItemCreateRequest, ItemResponse, ItemUpdateRequest, PyObjectId
+
 
 router = APIRouter(
     prefix="/items",
-    tags=["items"],
+    tags=["Items"],
     responses={404: {"description": "Not found"}},
 )
 
 @router.post("/", response_model=ItemResponse)
 async def post_item_handler(item: ItemCreateRequest):
-    result = await get_collection("items").insert_one(item.dict())
+    result = await get_collection("items").insert_one(item.model_dump())
     return ItemResponse(**item.model_dump(),_id=result.inserted_id)
 
 @router.get("/", response_model=list[ItemResponse])
 async def get_items_handler():
-    result = await get_collection("items").find({}).to_list(length=None)
-    return result
+    return await get_collection("items").find({}).to_list(length=None)
 
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_item_handler(item_id: PyObjectId):
@@ -44,7 +43,7 @@ async def patch_item_handler(item_id: PyObjectId, item: ItemUpdateRequest):
     return await general_update_item_handler(item_id, item, exclude_unset=True)
 
 @router.delete("/{item_id}", response_model=ItemResponse)
-async def delete_item(item_id: PyObjectId):
+async def delete_item_handler(item_id: PyObjectId):
     deleted_item = await get_collection("items").find_one_and_delete({"_id": item_id})
     if deleted_item:
         return deleted_item
