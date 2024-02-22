@@ -16,34 +16,19 @@ const optionsSchema = {
     }
 };
 
-const menuItemSchema = {
-    bsonType: "object",
-    required: ["name", "price", "options"],
-    additionalProperties: false,
-    properties: {
-        name: {
-            bsonType: "string",
-        },
-        price: {
-            bsonType: "double"
-        },
-        options: {
-            bsonType: "array",
-            items: optionsSchema
-        }
-    }
-};
-
 const orderItemSchema = {
     bsonType: "object",
-    required: ["kitchenName", "name", "price", "choices"],
+    required: ["menuName", "itemName", "kitchenName", "price", "choices"],
     additionalProperties: false,
     properties: {
-        kitchenName: {
+        menuName: {
             bsonType: "string"
         },
-        name: {
-            bsonType: "string",
+        itemName: {
+            bsonType: "string"
+        },
+        kitchenName: {
+            bsonType: "string"
         },
         price: {
             bsonType: "double"
@@ -57,12 +42,12 @@ const orderItemSchema = {
     }
 };
 
-db.createCollection("Menus", {
+db.createCollection("MenuItems", {
     validator: {
         $jsonSchema: {
             bsonType: "object",
-            title: "Menu Object Validation",
-            required: ["_id", "menuName", "kitchenName", "menuItems"],
+            title: "MenuItem Object Validation",
+            required: ["_id", "menuName", "itemName", "kitchenName", "price", "options"],
             additionalProperties: false,
             properties: {
                 _id: {
@@ -71,17 +56,33 @@ db.createCollection("Menus", {
                 menuName: {
                     bsonType: "string"
                 },
+                itemName: {
+                    bsonType: "string"
+                },
                 kitchenName: {
                     bsonType: "string"
                 },
-                menuItems: {
+                price: {
+                    bsonType: "double"
+                },
+                options: {
                     bsonType: "array",
-                    items: menuItemSchema
+                    items: optionsSchema
                 }
             }
         }
     }
 });
+
+db.MenuItems.createIndex(
+    {
+        "menuName": 1,
+        "itemName": 1
+    },
+    {
+        unique: true
+    }
+);
 
 db.createCollection("Users", {
     validator: {
@@ -138,7 +139,7 @@ db.createCollection("Orders", {
                     bsonType: "objectId"
                 },
                 dateOrdered: {
-                    bsonType: ["string", "date"]
+                    bsonType: "date"
                 },
                 orderItems: {
                     bsonType: "array",
@@ -152,42 +153,127 @@ db.createCollection("Orders", {
     }
 });
 
-console.log("Inserting menu document");
-db.Menus.insertOne(
+print("Inserting menuitem documents");
+db.MenuItems.insertMany([
     {
-        menuName: "Example Section",
+        menuName: "Food Items",
+        itemName: "Hotdog",
         kitchenName: "Example Kitchen",
-        menuItems: [
+        price: 4.95,
+        options: [
             {
-                name: "Example Food",
-                price: 9.99,
-                options: []
+                type: "checkbox",
+                choices: ["Ketchup", "Mustard", "Relish"]
             }
         ]
+    },
+    {
+        menuName: "Food Items",
+        itemName: "Bagel",
+        kitchenName: "Example Kitchen",
+        price: 2.50,
+        options: [
+            {
+                type: "radio",
+                choices: ["No Cream cheese", "Cream cheese", "Extra Cream cheese"]
+            }
+        ]
+    },
+    {
+        menuName: "Food Items",
+        itemName: "Bacon and Eggs",
+        kitchenName: "Example Kitchen",
+        price: 4.55,
+        options: [
+            {
+                type: "radio",
+                choices: ["Fried", "Scrambled"]
+            }
+        ]
+    },
+    {
+        menuName: "Food Items",
+        itemName: "Hamburger",
+        kitchenName: "Example Kitchen",
+        price: 5.05,
+        options: [
+            {
+                type: "radio",
+                choices: ["Rare", "Medium-Rare", "Medium", "Well Done"]
+            },
+            {
+                type: "checkbox",
+                choices: ["Lettuce", "Tomato", "Bacon", "Onion", "Ketchup", "Mustard"]
+            }
+        ]
+    },
+    {
+        menuName: "Food Items",
+        itemName: "Muffin",
+        kitchenName: "Example Kitchen",
+        price: 2.99,
+        options: [
+            {
+                type: "radio",
+                choices: ["Chocolate Chip", "Blueberry"]
+            }
+        ]
+    },
+    {
+        menuName: "Drink Items",
+        itemName: "Coffee",
+        kitchenName: "Example Kitchen",
+        price: 2.99,
+        options: []
+    },
+    {
+        menuName: "Drink Items",
+        itemName: "Bottled Water",
+        kitchenName: "Example Kitchen",
+        price: 1.50,
+        options: []
+    },
+    {
+        menuName: "Drink Items",
+        itemName: "Soft Drink",
+        kitchenName: "Example Kitchen",
+        price: 1.99,
+        options: []
     }
-);
+]);
 
-console.log("Inserting user document");
+print("Inserting user document");
 var userInsertRes = db.Users.insertOne(
     {
-        username: "Example Username",
+        username: "user1",
         balance: 123.45
     }
 );
 
-console.log("Inserting order document");
+print("Inserting order document");
 db.Orders.insertOne(
     {
         userId: userInsertRes.insertedId,
         dateOrdered: new Date(),
         orderItems: [
             {
+                menuName: "Drink Items",
+                itemName: "Soft Drink",
                 kitchenName: "Example Kitchen",
-                name: "Example Food",
-                price: 9.99,
+                price: 1.99,
                 choices: []
+            },
+            {
+                menuName: "Food Items",
+                itemName: "Hamburger",
+                kitchenName: "Example Kitchen",
+                price: 5.05,
+                choices: ["Medium", "Lettuce", "Bacon"]
             }
         ],
         status: "ordered"
     }
 );
+
+print(db.getMongo().getDBNames());
+print(db.getName());

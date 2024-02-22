@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
-from ..database import get_collection
-from ..schemas import datetime, OrderCreateRequest, OrderResponse, OrderUpdateRequest, PyObjectId
+from .. import exceptions
+from ..crud import get_orders, get_order_by_id, place_order, update_order
+from ..schemas import OrderCreateRequest, OrderResponse, OrderUpdateRequest, PyObjectId
 
 
 router = APIRouter(
@@ -11,36 +12,26 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=OrderResponse)
-async def post_order_handler(order: OrderCreateRequest):
-    result = await get_collection("orders").insert_one({**order.model_dump(), "dateOrdered": datetime.now()})
-    return OrderResponse(**order.model_dump(),_id=result.inserted_id)
+async def post_order_handler(request: OrderCreateRequest):
+    # userId will eventually be moved out of the request body
+    # place_order should take care of the 404 errors, no need to rethrow here
+    new_id = await place_order(request.userId, request)
+    return await get_order_by_id(new_id)
 
 @router.get("/", response_model=list[OrderResponse])
 async def get_orders_handler():
-    return await get_collection("orders").find({}).to_list(length=None)
+    return await get_orders()
 
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order_handler(order_id: PyObjectId):
-    order = await get_collection("orders").find_one({"_id": order_id})
+    order = await get_order_by_id(order_id)
     if order:
         return order
-    raise HTTPException(status_code=404, detail=f"Order not found")
-
-async def general_update_order_handler(order_id: PyObjectId, order: OrderCreateRequest, exclude_unset):
-    updated_order = await get_collection("orders").find_one_and_update(
-        {"_id": order_id}, {"$set": order.model_dump(exclude_unset=exclude_unset)}
-    )
-    if updated_order:
-        return await get_order_handler(order_id)
     raise HTTPException(status_code=404, detail="Order not found")
 
 @router.patch("/{order_id}", response_model=OrderResponse)
-async def patch_order_handler(order_id: PyObjectId, order: OrderUpdateRequest):
-    return await general_update_order_handler(order_id, order, exclude_unset=True)
-
-@router.delete("/{order_id}", response_model=OrderResponse)
-async def delete_order_handler(order_id: PyObjectId):
-    deleted_order = await get_collection("orders").find_one_and_delete({"_id": order_id})
-    if deleted_order:
-        return deleted_order
+async def patch_order_handler(order_id: PyObjectId, request: OrderUpdateRequest):
+    updated_order = await update_order(order_id, request)
+    if updated_order:
+        return await get_order_by_id(order_id)
     raise HTTPException(status_code=404, detail="Order not found")

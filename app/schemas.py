@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, field_serializer
 from pydantic_core import core_schema
 
 from datetime import datetime
+from enum import Enum
 from typing import Any, Optional
 
 
@@ -40,48 +41,34 @@ class PyObjectId(str):
 
 
 # Sub-models for later objects
+    
+class OrderStatus(str, Enum):
+    ordered = "ordered"
+    ready = "ready"
+    fulfilled = "fulfilled"
+
+class OptionType(str, Enum):
+    radio = "radio"
+    checkbox = "checkbox"
+
 class OptionsSchema(BaseModel):
-    type: str
+    type: OptionType
     choices: list[str] = []
 
-class MenuItemSchema(BaseModel):
-    name: str
-    price: float
-    options: list[OptionsSchema]
-
 class OrderItemSchema(BaseModel):
-    kitchenName: str
-    name: str
-    price: float
+    menuName: str
+    itemName: str
+    kitchenName: Optional[str] = None
+    price: Optional[float] = None
     choices: list[str]
 
-
 # Schemas for item operations
-    
-# Used for POST and PUT
-class ItemCreateRequest(BaseModel):
-    name: str
-    description: Optional[str] = None
-
-# Used for GET
-class ItemResponse(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
-    @field_serializer('id')
-    def serialize_id(self, id: PyObjectId, _info):
-        return str(id)
-    name: str
-    description: Optional[str] = None
-
-# No id field here since it is given by the path
-# Used for PATCH
-class ItemUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+# Note that these schemas may diverge from what the database stores
 
 class OrderCreateRequest(BaseModel):
+    # Will eventually be removed once the auth system is implemented
     userId: PyObjectId
     orderItems: list[OrderItemSchema]
-    status: str
 
 class OrderResponse(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
@@ -91,31 +78,36 @@ class OrderResponse(BaseModel):
     userId: PyObjectId
     dateOrdered: datetime
     orderItems: list[OrderItemSchema]
-    status: str
+    status: OrderStatus
 
 # Only thing that can be updated is the status
 class OrderUpdateRequest(BaseModel):
-    status: str
+    status: Optional[OrderStatus] = None
 
-class MenuCreateRequest(BaseModel):
+class MenuItemCreateRequest(BaseModel):
     menuName: str
+    itemName: str
     kitchenName: str
-    menuItems: list[MenuItemSchema]
+    price: float
+    options: list[OptionsSchema]
 
-class MenuResponse(BaseModel):
+class MenuItemResponse(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     @field_serializer('id')
     def serialize_id(self, id: PyObjectId, _info):
         return str(id)
     menuName: str
+    itemName: str
     kitchenName: str
-    menuItems: list[MenuItemSchema]
+    price: float
+    options: list[OptionsSchema]
 
-# Only thing that can be updated is the status
-class MenuUpdateRequest(BaseModel):
+class MenuItemUpdateRequest(BaseModel):
     menuName: Optional[str] = None
+    itemName: Optional[str] = None
     kitchenName: Optional[str] = None
-    menuItems: Optional[list[MenuItemSchema]] = None
+    price: Optional[float] = None
+    options: Optional[list[OptionsSchema]] = None
 
 class UserCreateRequest(BaseModel):
     username: str
