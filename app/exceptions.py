@@ -1,5 +1,3 @@
-from typing import Any, Dict
-from typing_extensions import Annotated, Doc
 from fastapi import HTTPException
 
 class EntityNotFoundException(HTTPException):
@@ -22,6 +20,22 @@ class UserNotFoundException(EntityNotFoundException):
     def __init__(self):
         super().__init__("User not found")
 
-class InsufficientBalanceException(HTTPException):
+class DatabaseViolation(HTTPException):
+    def __init__(self, detail="Document validation failed"):
+        super().__init__(409, detail)
+
+class InsufficientBalanceException(DatabaseViolation):
     def __init__(self):
-        super().__init__(409, "User has insufficient balance")
+        super().__init__("User has insufficient balance")
+
+class IllegalRadioSelectionException(HTTPException):
+    def __init__(self):
+        super().__init__(400, "Exactly one choice should be selected in a radio group")
+
+class MenuItemNotAvailableException(HTTPException):
+    def __init__(self):
+        super().__init__(400, "This MenuItem is unavailable at this time")
+
+class OptionsGroupsMismatch(HTTPException):
+    def __init__(self):
+        super().__init__(400, "The wrong number of groups was passed")

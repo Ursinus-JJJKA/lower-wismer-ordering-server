@@ -7,20 +7,10 @@ const optionsSchema = {
             enum: ["radio", "checkbox"]
         },
         choices: {
-            bsonType: "array",
-            minItems: 1,
-            items: {
-                bsonType: "object",
-                required: ["name", "price"],
-                additionalProperties: false,
-                properties: {
-                    name: {
-                        bsonType: "string"
-                    },
-                    price: {
-                        bsonType: "double"
-                    }
-                }
+            bsonType: "object",
+            minProperties: 1,
+            additionalProperties: {
+                bsonType: "decimal"
             }
         }
     }
@@ -41,12 +31,15 @@ const orderItemSchema = {
             bsonType: "string"
         },
         price: {
-            bsonType: "double"
+            bsonType: "decimal"
         },
         choices: {
             bsonType: "array",
             items: {
-                bsonType: "string"
+                bsonType: "array",
+                items: {
+                    bsonType: "string"
+                }
             }
         }
     }
@@ -57,7 +50,7 @@ db.createCollection("MenuItems", {
         $jsonSchema: {
             bsonType: "object",
             title: "MenuItem Object Validation",
-            required: ["_id", "menuName", "itemName", "kitchenName", "price", "options"],
+            required: ["_id", "menuName", "itemName", "kitchenName", "price", "options", "available"],
             additionalProperties: false,
             properties: {
                 _id: {
@@ -73,11 +66,14 @@ db.createCollection("MenuItems", {
                     bsonType: "string"
                 },
                 price: {
-                    bsonType: "double"
+                    bsonType: "decimal"
                 },
                 options: {
                     bsonType: "array",
                     items: optionsSchema
+                },
+                available: {
+                    bsonType: "bool"
                 }
             }
         }
@@ -111,7 +107,7 @@ db.createCollection("Users", {
                             bsonType: "string"
                         },
                         balance: {
-                            bsonType: "double"
+                            bsonType: "decimal"
                         }
                     }
                 }
@@ -156,12 +152,17 @@ db.createCollection("Orders", {
                     items: orderItemSchema
                 },
                 status: {
-                    bsonType: "object"
+                    bsonType: "object",
+                    minProperties: 1,
+                    additionalProperties: {
+                        enum: ["ordered", "ready", "fulfilled"]
+                    }
                 }
             }
         }
     }
 });
+
 
 print("Inserting menuitem documents");
 db.MenuItems.insertMany([
@@ -169,112 +170,120 @@ db.MenuItems.insertMany([
         menuName: "Food Items",
         itemName: "Hotdog",
         kitchenName: "Example Kitchen",
-        price: 4.95,
+        price: Decimal128("4.95"),
         options: [
             {
                 type: "checkbox",
-                choices: [
-                    {name: "Ketchup", price: 0},
-                    {name: "Mustard", price: 0},
-                    {name: "Relish", price: 0}
-                ]
+                choices: {
+                    "Ketchup": Decimal128("0"),
+                    "Mustard": Decimal128("0"),
+                    "Relish": Decimal128("0")
+                }
             }
-        ]
+        ],
+        available: true
     },
     {
         menuName: "Food Items",
         itemName: "Bagel",
         kitchenName: "Example Kitchen",
-        price: 2.50,
+        price: Decimal128("2.50"),
         options: [
             {
                 type: "radio",
-                choices: [
-                    {name: "No Cream cheese", price: 0},
-                    {name: "Cream cheese", price: 0},
-                    {name: "Extra Cream cheese", price: 0}
-                ]
+                choices: {
+                    "No Cream cheese": Decimal128("0"),
+                    "Cream cheese": Decimal128("0"),
+                    "Extra Cream cheese": Decimal128("0")
+                }
             }
-        ]
+        ],
+        available: true
     },
     {
         menuName: "Food Items",
         itemName: "Bacon and Eggs",
         kitchenName: "Example Kitchen",
-        price: 4.55,
+        price: Decimal128("4.55"),
         options: [
             {
                 type: "radio",
-                choices: [
-                    {name: "Fried", price: 0},
-                    {name: "Scrambled", price: 0}
-                ]
+                choices: {
+                    "Fried": Decimal128("0"),
+                    "Scrambled": Decimal128("0")
+                }
             }
-        ]
+        ],
+        available: false
     },
     {
         menuName: "Food Items",
         itemName: "Hamburger",
         kitchenName: "Example Kitchen",
-        price: 5.05,
+        price: Decimal128("5.05"),
         options: [
             {
                 type: "radio",
-                choices: [
-                    {name: "Rare", price: 0},
-                    {name: "Medium-Rare", price: 0},
-                    {name: "Medium", price: 0},
-                    {name: "Well Done", price: 0}
-                ]
+                choices: {
+                    "Rare": Decimal128("0"),
+                    "Medium-Rare": Decimal128("0"),
+                    "Medium": Decimal128("0"),
+                    "Well Done": Decimal128("0")
+                }
             },
             {
                 type: "checkbox",
-                choices: [
-                    {name: "Lettuce", price: 0},
-                    {name: "Tomato", price: 0},
-                    {name: "Bacon", price: 0.49},
-                    {name: "Onion", price: 0.19},
-                    {name: "Ketchup", price: 0},
-                    {name: "Mustard", price: 0}
-                ]
+                choices: {
+                    "Lettuce": Decimal128("0"),
+                    "Tomato": Decimal128("0"),
+                    "Bacon": Decimal128("0.49"),
+                    "Onion": Decimal128("0.19"),
+                    "Ketchup": Decimal128("0"),
+                    "Mustard": Decimal128("0")
+                }
             }
-        ]
+        ],
+        available: true
     },
     {
         menuName: "Food Items",
         itemName: "Muffin",
         kitchenName: "Example Kitchen",
-        price: 2.99,
+        price: Decimal128("2.99"),
         options: [
             {
                 type: "radio",
-                choices: [
-                    {name: "Chocolate Chip", price: 0},
-                    {name: "Blueberry", price: 0}
-                ]
+                choices: {
+                    "Chocolate Chip": Decimal128("0"),
+                    "Blueberry": Decimal128("0")
+                }
             }
-        ]
+        ],
+        available: true
     },
     {
         menuName: "Drink Items",
         itemName: "Coffee",
         kitchenName: "Example Kitchen",
-        price: 2.99,
-        options: []
+        price: Decimal128("2.99"),
+        options: [],
+        available: true
     },
     {
         menuName: "Drink Items",
         itemName: "Bottled Water",
         kitchenName: "Example Kitchen",
-        price: 1.50,
-        options: []
+        price: Decimal128("1.50"),
+        options: [],
+        available: true
     },
     {
         menuName: "Drink Items",
         itemName: "Soft Drink",
         kitchenName: "Example Kitchen",
-        price: 1.99,
-        options: []
+        price: Decimal128("1.99"),
+        options: [],
+        available: true
     }
 ]);
 
@@ -282,7 +291,7 @@ print("Inserting user document");
 var userInsertRes = db.Users.insertOne(
     {
         username: "user1",
-        balance: 123.45
+        balance: Decimal128("123.45")
     }
 );
 
@@ -296,20 +305,21 @@ db.Orders.insertOne(
                 menuName: "Drink Items",
                 itemName: "Soft Drink",
                 kitchenName: "Example Kitchen",
-                price: 1.99,
+                price: Decimal128("1.99"),
                 choices: []
             },
             {
                 menuName: "Food Items",
                 itemName: "Hamburger",
                 kitchenName: "Example Kitchen",
-                price: 5.54,
-                choices: ["Medium", "Lettuce", "Bacon"]
+                price: Decimal128("5.54"),
+                choices: [["Medium"], ["Lettuce", "Bacon"]]
             }
         ],
         status: {"Example Kitchen": "ordered"}
     }
 );
+
 
 print(db.getMongo().getDBNames());
 print(db.getName());

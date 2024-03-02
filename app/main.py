@@ -1,18 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from pymongo.errors import OperationFailure
 
 from contextlib import asynccontextmanager
+from logging import getLogger
 
 from .crud import get_kitchennames, get_menunames
 from .database import start_client, end_client
 from .routers import menuitems, orders, users
 
+#TODO see if there is a better way to be logging
+logger = getLogger("uvicorn")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Starting up database client")
+    logger.debug("Starting up database client")
     start_client()
     yield
-    print("Shutting down database client")
+    logger.debug("Shutting down database client")
     end_client()
 
 
@@ -33,3 +39,13 @@ async def get_menus_handler():
 @app.get("/kitchens", tags=["Kitchens"], response_model=list[str])
 async def get_kitchens_handler():
     return await get_kitchennames()
+
+
+@app.exception_handler(OperationFailure)
+async def pymongo_write_error(request: Request, exc: OperationFailure):
+    logger.info(exc)
+    logger.debug(request)
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "Database operation error"}
+    )
