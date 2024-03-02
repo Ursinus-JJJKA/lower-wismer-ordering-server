@@ -1,0 +1,4 @@
+.env
+/dbdata
+__pycache__
+python-venv
