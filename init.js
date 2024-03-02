@@ -10,7 +10,17 @@ const optionsSchema = {
             bsonType: "array",
             minItems: 1,
             items: {
-                bsonType: "string"
+                bsonType: "object",
+                required: ["name", "price"],
+                additionalProperties: false,
+                properties: {
+                    name: {
+                        bsonType: "string"
+                    },
+                    price: {
+                        bsonType: "double"
+                    }
+                }
             }
         }
     }
@@ -146,7 +156,7 @@ db.createCollection("Orders", {
                     items: orderItemSchema
                 },
                 status: {
-                    enum: ["ordered", "ready", "fulfilled"]
+                    bsonType: "object"
                 }
             }
         }
@@ -163,7 +173,11 @@ db.MenuItems.insertMany([
         options: [
             {
                 type: "checkbox",
-                choices: ["Ketchup", "Mustard", "Relish"]
+                choices: [
+                    {name: "Ketchup", price: 0},
+                    {name: "Mustard", price: 0},
+                    {name: "Relish", price: 0}
+                ]
             }
         ]
     },
@@ -175,7 +189,11 @@ db.MenuItems.insertMany([
         options: [
             {
                 type: "radio",
-                choices: ["No Cream cheese", "Cream cheese", "Extra Cream cheese"]
+                choices: [
+                    {name: "No Cream cheese", price: 0},
+                    {name: "Cream cheese", price: 0},
+                    {name: "Extra Cream cheese", price: 0}
+                ]
             }
         ]
     },
@@ -187,7 +205,10 @@ db.MenuItems.insertMany([
         options: [
             {
                 type: "radio",
-                choices: ["Fried", "Scrambled"]
+                choices: [
+                    {name: "Fried", price: 0},
+                    {name: "Scrambled", price: 0}
+                ]
             }
         ]
     },
@@ -199,11 +220,23 @@ db.MenuItems.insertMany([
         options: [
             {
                 type: "radio",
-                choices: ["Rare", "Medium-Rare", "Medium", "Well Done"]
+                choices: [
+                    {name: "Rare", price: 0},
+                    {name: "Medium-Rare", price: 0},
+                    {name: "Medium", price: 0},
+                    {name: "Well Done", price: 0}
+                ]
             },
             {
                 type: "checkbox",
-                choices: ["Lettuce", "Tomato", "Bacon", "Onion", "Ketchup", "Mustard"]
+                choices: [
+                    {name: "Lettuce", price: 0},
+                    {name: "Tomato", price: 0},
+                    {name: "Bacon", price: 0.49},
+                    {name: "Onion", price: 0.19},
+                    {name: "Ketchup", price: 0},
+                    {name: "Mustard", price: 0}
+                ]
             }
         ]
     },
@@ -215,7 +248,10 @@ db.MenuItems.insertMany([
         options: [
             {
                 type: "radio",
-                choices: ["Chocolate Chip", "Blueberry"]
+                choices: [
+                    {name: "Chocolate Chip", price: 0},
+                    {name: "Blueberry", price: 0}
+                ]
             }
         ]
     },
@@ -267,11 +303,11 @@ db.Orders.insertOne(
                 menuName: "Food Items",
                 itemName: "Hamburger",
                 kitchenName: "Example Kitchen",
-                price: 5.05,
+                price: 5.54,
                 choices: ["Medium", "Lettuce", "Bacon"]
             }
         ],
-        status: "ordered"
+        status: {"Example Kitchen": "ordered"}
     }
 );
 

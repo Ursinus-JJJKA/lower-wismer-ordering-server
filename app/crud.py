@@ -68,15 +68,14 @@ async def place_order(userId: schemas.ObjectId, request: schemas.OrderCreateRequ
     if total_price > user["balance"]:
         raise exceptions.InsufficientBalanceException()
     
+    await get_collection("Users").update_one({"_id": userId}, {"$inc": {"balance": -total_price}}, session=session)
     try:
-        await get_collection("Users").update_one({"_id": userId}, {"$inc": {"balance": -total_price}}, session=session)
-
         data = {"userId": userId, "dateOrdered": datetime.now(),
                 "orderItems": [item.model_dump() for item in validated_items], "status": schemas.OrderStatus.ordered}
         result = await get_collection("Orders").insert_one(data, session=session)
         return result.inserted_id
     except:
-        await get_collection("Users").replace_one({"_id": userId}, user, session=session)
+        await get_collection("Users").update_one({"_id": userId}, {"$inc": {"balance": total_price}}, session=session)
         raise
 
 async def get_orders(*, session=None) -> list:
