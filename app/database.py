@@ -1,7 +1,5 @@
-from dotenv import dotenv_values
+from dotenv import get_key
 from motor.motor_asyncio import AsyncIOMotorClient
-
-from urllib.parse import quote_plus
 
 # See https://motor.readthedocs.io/en/stable/api-asyncio/asyncio_motor_client.html
 
@@ -10,12 +8,9 @@ from urllib.parse import quote_plus
 client = None
 
 def start_client():
-    CONFIG = dotenv_values("/code/app/.env")    
     global client
     if not client:
-        auth = f"{quote_plus(CONFIG['MONGODB_USERNAME'])}:{quote_plus(CONFIG['MONGODB_PASSWORD'])}@" if ('MONGODB_USERNAME' in CONFIG and 'MONGODB_PASSWORD' in CONFIG) else ""
-        DATABASE_URL = f"mongodb://{auth}lwo_db:{CONFIG.get('MONGODB_PORT','27017')}/{CONFIG.get('MONGODB_DB','db')}?authSource=admin"
-        client = AsyncIOMotorClient(DATABASE_URL)
+        client = AsyncIOMotorClient(get_key("/code/app/.env","DATABASE_URL"))
     else:
         raise RuntimeError("Client already exists")
 

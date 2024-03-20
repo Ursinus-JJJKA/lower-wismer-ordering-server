@@ -1,9 +1,10 @@
+from datetime import datetime
+
 from pymongo import ReturnDocument
 
 from . import exceptions, schemas
 from .database import get_collection, get_session
-
-from datetime import datetime
+from .security import create_hashed_password
 
 
 # These functions should do what they say without worrying about authentication or permissions
@@ -45,7 +46,7 @@ def _calculate_total_price(orderItems: list[schemas.OrderItemSchema]) -> schemas
 def _validated_choices(passed_groups: list[list[str]], menuItem: dict) -> tuple[list[str],schemas.Decimal]:
     choices_extra_cost = schemas.Decimal()
     if len(passed_groups) != len(menuItem["options"]):
-        raise exceptions.OptionsGroupsMismatch()
+        raise exceptions.OptionsGroupsMismatchException()
     # Loop through each group of selections and group of available choices in parallel
     for passed_group_selections,optionGroup in zip(passed_groups,menuItem["options"],strict=True):
         optionType = optionGroup["type"]
@@ -80,9 +81,9 @@ async def _validated_orderitem(orderItem: schemas.OrderItemSchema, *, session=No
         choices=validated_choices
     )
 
-async def place_order(userId: schemas.ObjectId, request: schemas.OrderCreateRequest, *, session=None) -> schemas.ObjectId:
+async def place_order(user_id: schemas.ObjectId, request: schemas.OrderCreateRequest, *, session=None) -> schemas.ObjectId:
     # Try to find user, raise a 404 error if not
-    user = await get_user_by_id(userId, session=session)
+    user = await get_user_by_id(user_id, session=session)
     if user is None:
         raise exceptions.UserNotFoundException()
     
@@ -96,11 +97,11 @@ async def place_order(userId: schemas.ObjectId, request: schemas.OrderCreateRequ
         raise exceptions.InsufficientBalanceException()
     
     # Make user pay for it
-    await get_collection("Users").update_one({"_id": userId}, {"$inc": {"balance": schemas.Decimal128(-total_price)}}, session=session)
+    await get_collection("Users").update_one({"_id": user_id}, {"$inc": {"balance": schemas.Decimal128(-total_price)}}, session=session)
     try:
         # Place the order in the database
         data = {
-            "userId": userId,
+            "userId": user_id,
             "dateOrdered": datetime.now(),
             "orderItems": [item.model_dump() for item in validated_items],
             "status": dict.fromkeys(kitchens, schemas.OrderStatus.ordered)
@@ -109,14 +110,14 @@ async def place_order(userId: schemas.ObjectId, request: schemas.OrderCreateRequ
         return result.inserted_id
     except:
         # If something fails, refund the user
-        await get_collection("Users").update_one({"_id": userId}, {"$inc": {"balance": schemas.Decimal128(total_price)}}, session=session)
+        await get_collection("Users").update_one({"_id": user_id}, {"$inc": {"balance": schemas.Decimal128(total_price)}}, session=session)
         raise
 
 async def get_orders(*, session=None) -> list[dict]:
     return await get_collection("Orders").find({}, session=session).to_list(length=None)
 
-async def get_orders_by_user(userId: schemas.ObjectId, *, session=None) -> list[dict]:
-    return await get_collection("Orders").find({"userId": userId}, session=session).to_list(length=None)
+async def get_orders_by_user(user_id: schemas.ObjectId, *, session=None) -> list[dict]:
+    return await get_collection("Orders").find({"userId": user_id}, session=session).to_list(length=None)
 
 async def get_order_by_id(_id: schemas.ObjectId, *, session=None) -> dict:
     return await get_collection("Orders").find_one({"_id": _id}, session=session)
@@ -137,7 +138,9 @@ async def update_order(_id: schemas.ObjectId, request: schemas.OrderUpdateReques
 
 
 async def create_user(request: schemas.UserCreateRequest, *, session=None) -> schemas.ObjectId:
-    result = await get_collection("Users").insert_one(request.model_dump(), session=session)
+    new_user_data = request.model_dump(exclude={"password"})
+    new_user_data["hashed_password"] = create_hashed_password(request.password)
+    result = await get_collection("Users").insert_one(new_user_data, session=session)
     return result.inserted_id
 
 async def get_user_by_id(_id: schemas.ObjectId, *, session=None) -> dict:
@@ -150,8 +153,11 @@ async def get_users(*, session=None) -> list[dict]:
     return await get_collection("Users").find({}, session=session).to_list(length=None)
 
 async def update_user(_id: schemas.ObjectId, request: schemas.UserUpdateRequest, *, session=None) -> dict:
+    new_user_data = request.model_dump(exclude_unset=True, exclude={"password"})
+    if request.password:
+        new_user_data["hashed_password"] = create_hashed_password(request.password)
     return await get_collection("Users").find_one_and_update(
-        {"_id": _id}, {"$set": request.model_dump(exclude_unset=True)},
+        {"_id": _id}, {"$set": new_user_data},
         return_document=ReturnDocument.AFTER, session=session
     )
 
