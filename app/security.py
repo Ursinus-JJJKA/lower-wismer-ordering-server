@@ -60,7 +60,7 @@ router = APIRouter(
 @router.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> Token:
     user = await authenticate_password(form_data.username, form_data.password)
-    if len(form_data.scopes[0])!=1:
+    if len(form_data.scopes)!=1:
         raise ScopeSelectionException()
     desired_role = form_data.scopes[0]
     if desired_role not in user["roles"]:

@@ -12,7 +12,7 @@ Note that there is a funny issue where the VSCode extension for Python virtual e
 
 ## Starting the server
 
-Make sure python and docker are installed. Run the command `python run.py`. If there is no .env file, it will prompt the creation of one based off .env_sample. Then, the script will run the docker compose file. To pause the server without deleting the database, run `docker compose stop`. To stop and delete the database run `python reset.py` (this will also delete the docker image for the webserver).
+Make sure python and docker are installed. Run the command `python run.py`. If there is no .env file, it will create one. You can also force recreation by passing the `--new` flag. To connect to an Altas cloud backend, use the `--atlas` flag. Then, the script will run the docker compose file. To pause the server without deleting the database, run `docker compose stop`. To stop and delete the database run `python reset.py` (this will also delete the docker image for the webserver).
 
 Note: Docker does not seem to like running the starting command over an SSH connection. From what I can tell, it has some credential problem when attempting to pull the python image in the build stage for the webserver image. Just don't do it I guess.
 
