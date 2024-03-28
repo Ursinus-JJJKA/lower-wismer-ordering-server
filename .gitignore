@@ -2,3 +2,6 @@
 /dbdata
 __pycache__
 python-venv
+*.key
+*.crt
+*.pem

@@ -23,6 +23,9 @@ async def get_menuitem_by_names(menuName: str, itemName: str, *, session=None) -
 async def get_menuitems(*, session=None) -> list[dict]:
     return await get_collection("MenuItems").find({}, session=session).to_list(length=None)
 
+async def get_menuitems_by_menu(menuName: str, *, session=None) -> list[dict]:
+    return await get_collection("MenuItems").find({"menuName": menuName}, session=session).to_list(length=None)
+
 async def get_menunames(*, session=None) -> list[str]:
     return await get_collection("MenuItems").distinct("menuName", session=session)
 
@@ -121,6 +124,9 @@ async def get_orders_by_user(user_id: schemas.ObjectId, *, session=None) -> list
 
 async def get_order_by_id(_id: schemas.ObjectId, *, session=None) -> dict:
     return await get_collection("Orders").find_one({"_id": _id}, session=session)
+
+async def get_active_orders_by_kitchen(kitchenName: str, *, session=None) -> list[dict]:
+    return await get_collection("Orders").find({f"status.{kitchenName}": {"$in": ["ordered", "ready"]}}, session=session).to_list(length=None)
 
 #TODO investigate if an injection attack is possible here
 async def update_order(_id: schemas.ObjectId, request: schemas.OrderUpdateRequest, *, session=None) -> dict:

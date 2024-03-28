@@ -4,6 +4,7 @@ services:
   lwo_db:
     image: mongo
     container_name: mongo_db
+    profiles: [localdb]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
@@ -21,3 +22,16 @@ services:
     container_name: lwo_webserver
     ports:
       - "${WEBSERVER_PORT}:8000"
+    secrets:
+      - env_file
+      - server_x509_cert
+      - server_x509_key
+
+
+secrets:
+  env_file:
+    file: .env
+  server_x509_cert:
+    file: lwo.crt
+  server_x509_key:
+    file: lwo.key
