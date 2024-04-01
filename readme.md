@@ -48,3 +48,25 @@ Technically, MongoDB (and most NoSQL engines) are schema-less. However, we are u
 If you wish to modify the schema, make sure to modify the validators, the example documents (also located inside the init.js file), and the schemas in the schema.py file.
 
 I wish we could write a script to generate the schema.py file from the validators, but this is likely impossible since some attributes should not be included in certain schemas (like how orders are not allowed to change the dateOrdered field in update requests, or hypothetically a hashed password field for users should NEVER be sent to the frontend) and it would be hard to make a script to do it correctly.
+
+## TODO
+
+Research, consider, or implement the following:
+* /prevOrder endpoint
+* menuitem options advanced config, EX: quantities, defaults?
+* CSRF protection
+* injection attack protection
+* XSS protection
+* SSRF protection
+* CORS protection
+* test if spaces and special chars break run.py or docker
+* test special characters in usernames, passwords, itemnames, menunames, kitchennames
+* add checks on updating roles
+* write docstrings for all handlers
+* specify hint on every crud/database call
+* switch to RSA??
+* todos listed in repo
+* block bruteforce password attempts
+* consider using menuitem_id when placing orders
+* ensure that "none" alg JWTs fail auth
+* have docker compose create a superadmin on init launch

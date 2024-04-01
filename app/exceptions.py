@@ -55,3 +55,7 @@ class UnauthorizedUserException(HTTPException):
 class ScopeSelectionException(HTTPException):
     def __init__(self):
         super().__init__(400, detail="Only one role is allowed at a time")
+
+class InvalidOrderException(HTTPException):
+    def __init__(self):
+        super().__init__(400, detail="Bad order request, must have at least one item")

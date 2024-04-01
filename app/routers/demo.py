@@ -1,3 +1,6 @@
+import asyncio
+import time
+
 from fastapi import APIRouter
 
 from ..crud import create_user, get_user_by_id, update_user
@@ -29,3 +32,13 @@ async def verify_jwt_handler(jwt: str):
         return authenticate_jwt(jwt)
     except CredentialsException:
         return False
+
+@router.post("/nb_wait")
+async def nonblocking_sleep(dur: int):
+    await asyncio.sleep(dur)
+    return {"message": "I'm well rested!"}
+
+@router.post("/b_wait")
+async def blocking_sleep(dur: int):
+    time.sleep(dur)
+    return {"message": "I'm well rested!"}

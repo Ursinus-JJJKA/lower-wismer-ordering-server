@@ -7,7 +7,7 @@ from .security import authenticate_jwt
 
 
 async def get_current_user(verified_token_data: TokenData = Depends(authenticate_jwt)) -> dict:
-    """Get the user that owns the JWT"""
+    """Verify the JWT and return the associated user"""
     user = await get_user_by_id(verified_token_data.sub)
     if user is None:
         raise CredentialsException()

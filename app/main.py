@@ -8,7 +8,6 @@ from pymongo.errors import OperationFailure
 from .database import start_client, end_client
 from .routers import account, demo, kitchens, menus, menuitems, orders, users
 
-#TODO see if there is a better way to be logging
 logger = getLogger("uvicorn")
 
 @asynccontextmanager
