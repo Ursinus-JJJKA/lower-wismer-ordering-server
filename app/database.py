@@ -10,7 +10,8 @@ client = None
 def start_client():
     global client
     if not client:
-        client = AsyncIOMotorClient(get_key("/code/app/.env","DATABASE_URL"))
+        client = AsyncIOMotorClient(get_key("/run/secrets/env_file","DATABASE_URL"),
+                                    maxIdleTimeMS=5*60*1000, minPoolSize=0, maxPoolSize=100)
     else:
         raise RuntimeError("Client already exists")
 

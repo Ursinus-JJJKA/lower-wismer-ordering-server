@@ -23,6 +23,9 @@ async def get_menuitem_by_names(menuName: str, itemName: str, *, session=None) -
 async def get_menuitems(*, session=None) -> list[dict]:
     return await get_collection("MenuItems").find({}, session=session).to_list(length=None)
 
+async def get_menuitems_by_menu(menuName: str, *, session=None) -> list[dict]:
+    return await get_collection("MenuItems").find({"menuName": menuName}, session=session).to_list(length=None)
+
 async def get_menunames(*, session=None) -> list[str]:
     return await get_collection("MenuItems").distinct("menuName", session=session)
 
@@ -41,7 +44,7 @@ async def delete_menuitem(_id: schemas.ObjectId, *, session=None) -> dict:
 
 def _calculate_total_price(orderItems: list[schemas.OrderItemSchema]) -> schemas.Decimal:
     # The order items coming in should be valid, aka the choices have been included into the item
-    return sum(item.price.to_decimal() for item in orderItems)
+    return sum((item.price.to_decimal() for item in orderItems), start=schemas.Decimal())
 
 def _validated_choices(passed_groups: list[list[str]], menuItem: dict) -> tuple[list[str],schemas.Decimal]:
     choices_extra_cost = schemas.Decimal()
@@ -86,6 +89,8 @@ async def place_order(user_id: schemas.ObjectId, request: schemas.OrderCreateReq
     user = await get_user_by_id(user_id, session=session)
     if user is None:
         raise exceptions.UserNotFoundException()
+    if len(request.orderItems)==0:
+        raise exceptions.InvalidOrderException()
     
     # Get a validated list of items and make a list of kitchens that will need to make the order
     validated_items = [await _validated_orderitem(o, session=session) for o in request.orderItems]
@@ -122,6 +127,9 @@ async def get_orders_by_user(user_id: schemas.ObjectId, *, session=None) -> list
 async def get_order_by_id(_id: schemas.ObjectId, *, session=None) -> dict:
     return await get_collection("Orders").find_one({"_id": _id}, session=session)
 
+async def get_active_orders_by_kitchen(kitchenName: str, *, session=None) -> list[dict]:
+    return await get_collection("Orders").find({f"status.{kitchenName}": {"$in": ["ordered", "ready"]}}, session=session).to_list(length=None)
+
 #TODO investigate if an injection attack is possible here
 async def update_order(_id: schemas.ObjectId, request: schemas.OrderUpdateRequest, *, session=None) -> dict:
     # Formatting so that updates to status object works
@@ -143,14 +151,14 @@ async def create_user(request: schemas.UserCreateRequest, *, session=None) -> sc
     result = await get_collection("Users").insert_one(new_user_data, session=session)
     return result.inserted_id
 
-async def get_user_by_id(_id: schemas.ObjectId, *, session=None) -> dict:
-    return await get_collection("Users").find_one({"_id": _id}, session=session)
+async def get_user_by_id(_id: schemas.ObjectId, *, session=None, include_hashed_password:bool=False) -> dict:
+    return await get_collection("Users").find_one({"_id": _id}, projection={"hashed_password": 0} if not include_hashed_password else {}, session=session)
 
-async def get_user_by_username(username: str, *, session=None) -> dict:
-    return await get_collection("Users").find_one({"username": username}, session=session)
+async def get_user_by_username(username: str, *, session=None, include_hashed_password=False) -> dict:
+    return await get_collection("Users").find_one({"username": username}, projection={"hashed_password": 0} if not include_hashed_password else {}, session=session)
 
 async def get_users(*, session=None) -> list[dict]:
-    return await get_collection("Users").find({}, session=session).to_list(length=None)
+    return await get_collection("Users").find({}, projection={"hashed_password": 0}, session=session).to_list(length=None)
 
 async def update_user(_id: schemas.ObjectId, request: schemas.UserUpdateRequest, *, session=None) -> dict:
     new_user_data = request.model_dump(exclude_unset=True, exclude={"password"})
@@ -158,8 +166,9 @@ async def update_user(_id: schemas.ObjectId, request: schemas.UserUpdateRequest,
         new_user_data["hashed_password"] = create_hashed_password(request.password)
     return await get_collection("Users").find_one_and_update(
         {"_id": _id}, {"$set": new_user_data},
+        projection={"hashed_password": 0},
         return_document=ReturnDocument.AFTER, session=session
     )
 
 async def delete_user(_id: schemas.ObjectId, *, session=None) -> dict:
-    return await get_collection("Users").find_one_and_delete({"_id": _id}, session=session)
+    return await get_collection("Users").find_one_and_delete({"_id": _id}, projection={"hashed_password": 0}, session=session)
