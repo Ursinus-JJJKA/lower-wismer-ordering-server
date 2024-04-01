@@ -1,11 +1,11 @@
-from bson import Decimal128, ObjectId
-from pydantic import BaseModel, Field
-from pydantic_core import core_schema
-
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Optional
+
+from bson import Decimal128, ObjectId
+from pydantic import BaseModel, Field
+from pydantic_core import core_schema
 
 
 # I'm aware the next lines are confusing and look bad. This is the result of hours of troubleshooting and searching. Pray it doesn't break
@@ -86,12 +86,26 @@ class OrderItemSchema(BaseModel):
     price: Optional[PyDecimal128] = None
     choices: list[list[str]]
 
+class Role(str, Enum):
+    superadmin = "superadmin"
+    admin = "admin"
+    kitchen = "kitchen"
+    user = "user"
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    sub: PyObjectId
+    username: str
+    role: Role
+    exp: datetime
+
 # Schemas for item operations
 # Note that these schemas may diverge from what the database stores
 
 class OrderCreateRequest(BaseModel):
-    # Will eventually be removed once the auth system is implemented
-    userId: PyObjectId
     orderItems: list[OrderItemSchema]
 
 class OrderResponse(BaseModel):
@@ -132,14 +146,18 @@ class MenuItemUpdateRequest(BaseModel):
 
 class UserCreateRequest(BaseModel):
     username: str
+    password: str
+    roles: list[Role]
     balance: PyDecimal128
 
 class UserResponse(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     username: str
+    roles: list[Role]
     balance: PyDecimal128
 
-# Only thing that can be updated is the status
 class UserUpdateRequest(BaseModel):
     username: Optional[str] = None
+    password: Optional[str] = None
+    roles: Optional[list[Role]] = None
     balance: Optional[PyDecimal128] = None

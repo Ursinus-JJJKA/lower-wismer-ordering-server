@@ -1,5 +1,8 @@
 fastapi
 motor
+passlib[bcrypt]
 pydantic
 python-dotenv
-uvicorn
+python-jose[cryptography]
+python-multipart
+uvicorn[standard]

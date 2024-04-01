@@ -89,6 +89,11 @@ db.MenuItems.createIndex(
         unique: true
     }
 );
+db.MenuItems.createIndex(
+    {
+        "menuName": 1
+    }
+);
 
 db.createCollection("Users", {
     validator: {
@@ -97,7 +102,7 @@ db.createCollection("Users", {
                 $jsonSchema: {
                     bsonType: "object",
                     title: "User Object Validation",
-                    required: ["_id", "username", "balance"],
+                    required: ["_id", "username", "hashed_password", "roles", "balance"],
                     additionalProperties: false,
                     properties: {
                         _id: {
@@ -105,6 +110,15 @@ db.createCollection("Users", {
                         },
                         username: {
                             bsonType: "string"
+                        },
+                        hashed_password: {
+                            bsonType: "string"
+                        },
+                        roles: {
+                            bsonType: "array",
+                            items: {
+                                enum: ["superadmin", "admin", "kitchen", "user"]
+                            }
                         },
                         balance: {
                             bsonType: "decimal"
@@ -162,6 +176,17 @@ db.createCollection("Orders", {
         }
     }
 });
+
+db.Orders.createIndex(
+    {
+        "userId": 1
+    }
+);
+db.Orders.createIndex(
+    {
+        "dateOrdered": 1
+    }
+);
 
 
 print("Inserting menuitem documents");
@@ -291,6 +316,16 @@ print("Inserting user document");
 var userInsertRes = db.Users.insertOne(
     {
         username: "user1",
+        hashed_password: "$2b$12$2jRXbhUZEADfngxyOzuhgeGFyhAMvGYSoBtOGqeK.qBbyb.AqUxka",
+        roles: ["superadmin", "admin", "kitchen", "user"],
+        balance: Decimal128("1000.0")
+    }
+);
+db.Users.insertOne(
+    {
+        username: "user2",
+        hashed_password: "$2b$12$qizLTWWpmSmBn7huUUT2aeHxC6hoSm5V23xWEN4ozKc98zJ8y2QVq",
+        roles: ["user"],
         balance: Decimal128("123.45")
     }
 );
