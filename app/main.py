@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from logging import getLogger
+logger = getLogger("uvicorn")
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -8,7 +9,6 @@ from pymongo.errors import OperationFailure
 from .database import start_client, end_client
 from .routers import account, demo, kitchens, menus, menuitems, orders, users
 
-logger = getLogger("uvicorn")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

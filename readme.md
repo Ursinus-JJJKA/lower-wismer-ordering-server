@@ -52,21 +52,23 @@ I wish we could write a script to generate the schema.py file from the validator
 ## TODO
 
 Research, consider, or implement the following:
-* /prevOrder endpoint
-* menuitem options advanced config, EX: quantities, defaults?
-* CSRF protection
-* injection attack protection
-* XSS protection
-* SSRF protection
-* CORS protection
+* /prevOrder endpoint?
+* menuitem options advanced config, EX: quantities, defaults??
+* CSRF protection??
+* injection attack protection?
+* XSS protection??
+* SSRF protection??
+* CORS protection?
 * test if spaces and special chars break run.py or docker
 * test special characters in usernames, passwords, itemnames, menunames, kitchennames
 * add checks on updating roles
+* add limit to blocking sleep test endpoint?
 * write docstrings for all handlers
 * specify hint on every crud/database call
 * switch to RSA??
-* todos listed in repo
+* TODOs listed in files
 * block bruteforce password attempts
-* consider using menuitem_id when placing orders
+* consider using menuitem_id when placing orders?
 * ensure that "none" alg JWTs fail auth
-* have docker compose create a superadmin on init launch
+* have docker compose create a superadmin on init launch?
+* Consider modifying the changepassword endpoint? (move newpassword to body, ensure that it can handle unicode/quotes/spaces/etc, add oldpassword field)
